@@ -2,19 +2,13 @@
 import os
 from openai import OpenAI
 
-# ====== 【重要】请在此处填写你的 DeepSeek API Key ======
-DEEPSEEK_API_KEY = "sk-90556009ed964b54b0b269eedb53693a"  # 👈 替换为你的有效密钥！
-# =======================================================
+# 从环境变量读取 API Key（Render 会自动注入）
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
 def generate_response(user_message: str, history: list) -> str:
-    """
-    调用 DeepSeek 生成带幻觉的回复
-    :param user_message: 用户当前消息
-    :param history: 对话历史，格式 [{"user": "...", "ai": "..."}, ...]
-    :return: AI 回复字符串
-    """
+    # 校验 API Key
     if not DEEPSEEK_API_KEY or not DEEPSEEK_API_KEY.startswith("sk-"):
-        return "❌ 错误：未配置有效的 DeepSeek API Key，请联系管理员。"
+        return "❌ 错误：未配置有效的 DeepSeek API Key。"
 
     try:
         client = OpenAI(
