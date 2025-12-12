@@ -11,6 +11,18 @@ from pydantic import BaseModel
 from ai_engine import generate_response
 
 app = FastAPI()
+
+# 添加 CORS（避免跨域）
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 os.makedirs("static", exist_ok=True)
 DB_PATH = "experiment.db"
 

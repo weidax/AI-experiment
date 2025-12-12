@@ -1,134 +1,146 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI 助手系统</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI 幻觉实验系统</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      max-width: 420px;
-      margin: 30px auto;
-      padding: 0 16px;
-      background: #f8f9fa;
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: #f9f9f9;
     }
-    .container {
-      background: white;
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    h1 {
+      text-align: center;
+      color: #333;
     }
-    input, button {
+    .screen { display: none; }
+    #login-screen { display: block; }
+    input[type="text"] {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       margin: 10px 0;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
       box-sizing: border-box;
     }
     button {
-      background: #1976d2;
+      width: 100%;
+      padding: 12px;
+      background-color: #4CAF50;
       color: white;
       border: none;
+      border-radius: 4px;
       cursor: pointer;
-      font-weight: bold;
+      font-size: 16px;
     }
-    button:hover { background: #1565c0; }
-    #chatView { display: none; }
-    #loginView { display: block; }
-    #chatBox {
-      height: 60vh;
+    button:hover {
+      background-color: #45a049;
+    }
+    #chat-container {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      background: white;
+      height: 400px;
       overflow-y: auto;
-      border: 1px solid #eee;
-      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .message {
       margin-bottom: 12px;
-      background: #fcfcfc;
-      border-radius: 12px;
-    }
-    .msg {
-      padding: 10px 14px;
-      margin: 8px 0;
-      border-radius: 18px;
+      padding: 8px 12px;
+      border-radius: 8px;
       max-width: 80%;
-      word-break: break-word;
-      line-height: 1.4;
+      word-wrap: break-word;
     }
-    .user {
-      background: #e3f2fd;
-      margin-left: auto;
-      text-align: right;
-    }
-    .ai {
-      background: #f1f8e9;
-    }
-    .input-area {
+    .user { background-color: #e3f2fd; margin-left: auto; text-align: right; }
+    .ai { background-color: #f1f8e9; }
+    #input-area {
       display: flex;
-      gap: 8px;
+      gap: 10px;
     }
-    #userInput {
+    #user-input {
       flex: 1;
-      border: 1px solid #ccc;
-      border-radius: 24px;
-      padding: 10px 16px;
-      outline: none;
-    }
-    #sendBtn {
-      width: 70px;
-      border-radius: 24px;
       padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
-    h2, h3 {
-      margin-top: 0;
-      color: #333;
+    #send-btn {
+      width: auto;
+      padding: 10px 20px;
     }
-    p.note {
-      color: #666;
-      font-size: 14px;
+    .error {
+      color: red;
       text-align: center;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <!-- 登录页 -->
-  <div id="loginView" class="container">
-    <h2>🧠 AI 对话</h2>
-    <p class="note">请输入你的昵称</p>
-    <input type="text" id="usernameInput" placeholder="例如：P01, 李四..." maxlength="30" autocomplete="off" />
-    <button onclick="login()">进入AI</button>
+
+  <!-- 登录页面 -->
+  <div id="login-screen" class="screen">
+    <h1>AI 幻觉实验系统</h1>
+    <p>请输入您的参与者编号（格式：P + 数字，例如 P01）</p>
+    <input type="text" id="username" placeholder="例如：P01" maxlength="20" />
+    <button id="enter-btn">进入 AI 实验</button>
+    <div id="login-error" class="error"></div>
   </div>
 
-  <!-- 聊天页 -->
-  <div id="chatView" class="container">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <h3>💬 与 AI 对话</h3>
-      <button onclick="logout()" style="width:auto;padding:6px 12px;font-size:14px;">退出</button>
+  <!-- 聊天页面 -->
+  <div id="chat-screen" class="screen">
+    <h1>欢迎！<span id="welcome-user"></span></h1>
+    <div id="chat-container"></div>
+    <div id="input-area">
+      <input type="text" id="user-input" placeholder="输入您的问题..." />
+      <button id="send-btn">发送</button>
     </div>
-    <div id="chatBox"></div>
-    <div class="input-area">
-      <input type="text" id="userInput" placeholder="输入消息..." maxlength="200" />
-      <button id="sendBtn" onclick="sendMessage()">发送</button>
-    </div>
+    <button id="back-btn" style="margin-top: 10px; background-color: #999;">返回登录</button>
   </div>
 
   <script>
-    let currentUserId = localStorage.getItem('user_id');
+    // 全局状态
+    let currentUserID = '';   // 存储 user_id（不是用户名！）
+    let currentUsername = ''; // 仅用于显示
 
-    function showLogin() {
-      document.getElementById('loginView').style.display = 'block';
-      document.getElementById('chatView').style.display = 'none';
+    // DOM 元素
+    const loginScreen = document.getElementById('login-screen');
+    const chatScreen = document.getElementById('chat-screen');
+    const usernameInput = document.getElementById('username');
+    const enterBtn = document.getElementById('enter-btn');
+    const loginError = document.getElementById('login-error');
+    const welcomeUser = document.getElementById('welcome-user');
+    const chatContainer = document.getElementById('chat-container');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const backBtn = document.getElementById('back-btn');
+
+    // 显示错误
+    function showError(message) {
+      loginError.textContent = message;
+      setTimeout(() => { loginError.textContent = ''; }, 5000);
     }
 
-    function showChat() {
-      document.getElementById('loginView').style.display = 'none';
-      document.getElementById('chatView').style.display = 'block';
-      document.getElementById('chatBox').innerHTML = '';
+    // 添加消息到聊天框
+    function addMessage(text, sender) {
+      const div = document.createElement('div');
+      div.className = `message ${sender}`;
+      div.textContent = text;
+      chatContainer.appendChild(div);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    async function login() {
-      const username = document.getElementById('usernameInput').value.trim();
+    // 登录逻辑
+    enterBtn.addEventListener('click', async () => {
+      const username = usernameInput.value.trim();
       if (!username) {
-        alert('请输入用户名');
+        showError('请输入参与者编号');
+        return;
+      }
+      if (!username.startsWith('P')) {
+        showError('编号必须以 "P" 开头（例如 P01）');
         return;
       }
 
@@ -136,66 +148,83 @@
         const res = await fetch('/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username })
+          body: JSON.stringify({ username }) // ← 字段名必须是 username
         });
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-        currentUserId = data.user_id;
-        localStorage.setItem('user_id', currentUserId);
-        showChat();
-      } catch (err) {
-        console.error(err);
-        alert('登录失败：' + (err.message || '未知错误'));
-      }
-    }
 
-    function logout() {
-      localStorage.removeItem('user_id');
-      currentUserId = null;
-      showLogin();
-    }
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.detail || `服务器返回错误 (${res.status})`);
+        }
+
+        const data = await res.json();
+        // 后端返回 { user_id: "..." }
+        currentUserID = data.user_id;
+        currentUsername = username;
+
+        // 切换界面
+        welcomeUser.textContent = username;
+        chatContainer.innerHTML = '';
+        loginScreen.style.display = 'none';
+        chatScreen.style.display = 'block';
+        userInput.focus();
+
+      } catch (err) {
+        console.error('Login error:', err);
+        showError('登录失败：' + err.message);
+      }
+    });
+
+    // 发送消息
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
 
     async function sendMessage() {
-      const input = document.getElementById('userInput');
-      const msg = input.value.trim();
-      if (!msg || !currentUserId) return;
+      const msg = userInput.value.trim();
+      if (!msg || !currentUserID) return;
 
       addMessage(msg, 'user');
-      input.value = '';
+      userInput.value = '';
+      userInput.disabled = true;
+      sendBtn.disabled = true;
 
       try {
         const res = await fetch('/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: currentUserId, message: msg })
+          body: JSON.stringify({
+            user_id: currentUserID,   // ← 必须传 user_id
+            message: msg
+          })
         });
-        if (!res.ok) throw new Error(await res.text());
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.detail || `聊天请求失败 (${res.status})`);
+        }
+
         const data = await res.json();
         addMessage(data.reply, 'ai');
+
       } catch (err) {
-        console.error(err);
-        addMessage("⚠️ 请求失败，请重试。", 'ai');
+        console.error('Chat error:', err);
+        addMessage('❌ 系统错误：' + err.message, 'ai');
+      } finally {
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        userInput.focus();
       }
     }
 
-    function addMessage(text, sender) {
-      const box = document.getElementById('chatBox');
-      const div = document.createElement('div');
-      div.className = `msg ${sender}`;
-      div.textContent = text;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
-    }
-
-    document.getElementById('userInput').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
+    // 返回登录
+    backBtn.addEventListener('click', () => {
+      chatScreen.style.display = 'none';
+      loginScreen.style.display = 'block';
+      usernameInput.value = '';
+      currentUserID = '';
+      currentUsername = '';
     });
-
-    if (currentUserId) {
-      showChat();
-    } else {
-      showLogin();
-    }
   </script>
 </body>
 </html>
